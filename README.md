@@ -125,16 +125,23 @@ An indexable array of 256 slots (from `0` to `255`), where each slot can hold an
 | 0xA9 | `FLOW_BREAK_LOOP_IF`| `cond_key (1)`                                               | Exit the current loop if `context[cond_key]` is `True`.                  |
 | 0xAF | `FLOW_HALT`         | -                                                            | Immediately terminate execution.                                         |
 
-####  **0xE0-0xFF: Data Formatting & Sinks**
+#### **0xE0-0xEF: Data Serialization & Conversion**
 
-| Flag | Mnemonic            | Parameters                                                                   | Description                                                              |
-|:-----|:--------------------|:-----------------------------------------------------------------------------|:-------------------------------------------------------------------------|
-| 0xE0 | `FORMAT_TEXT_TABLE` | `out_key (1)`, `dict_key (1)`, `indices_key (1)`, `vals_key (1)`             | **Prepare:** Format Top-K results into a string table.                   |
-| 0xE1 | `FORMAT_TO_IMAGE`   | `out_key (1)`, `in_key (1)`, `...params`                                     | **Prepare:** Convert a tensor into a displayable image format.           |
-| 0xE2 | `FORMAT_TO_AUDIO`   | `out_key (1)`, `in_key (1)`, `rate_key (1)`                                  | **Prepare:** Convert a tensor into an audio format (e.g., WAV bytes).    |
-| 0xF0 | `SINK_CONSOLE`      | `in_key (1)`, `stream_mode (1)`                                              | **Sink: Console.** `stream_mode`: 0=line, 1=stream.                      |
-| 0xF1 | `SINK_FILE`         | `in_key (1)`, `path_key (1)`, `format (1)`                                   | **Sink: File.** `format`: 0=txt, 1=png/jpg, 2=wav, 3=tensor_binary.      |
-| 0xFE | `SINK_RETURN`       | `count (1)`, `key_1..N`                                                      | **Sink: Return Value.** Terminate and return values from `context`.      |
+| Flag | Mnemonic           | Parameters (`name (length)`)                                 | Description                                                                                                                              |
+|:-----|:-------------------|:-------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------|
+| 0xE0 | `SERIALIZE_OBJECT` | `out_key (1)`, `in_key (1)`, `format_type (1)`, `...params`  | **Basic conversion command.** Serializes the object from `in_key` to bytes or a string and places it in `out_key`. `format_type`: 0=UTF8_STRING, 1=JSON, 2=PNG, 3=WAV, 4=RAW_TENSOR_BYTES. |
+| 0xE1 | `DESERIALIZE_OBJECT` | `out_key (1)`, `in_key (1)`, `format_type (1)`, `...params`  | **Reverse operation.** Deserializes bytes/string from `in_key` into a structured object (e.g. tensor) and places it into `out_key`. `format_type` is similar to `SERIALIZE_OBJECT`. |
+| ...  | *Reserved*         |                                                              | Reserved for future formats and utilities.                                                                                               |
+
+#### **0xF0-0xFF: I/O Sinks & Termination**
+
+| Flag | Mnemonic           | Parameters (`name (length)`)                                   | Description                                                                                                                               |
+|:-----|:-------------------|:---------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------|
+| 0xF0 | `IO_WRITE`         | `in_key (1)`, `dest_type (1)`, `dest_key (1)`, `write_mode (1)`| **General-purpose output command.** Writes data from `in_key`. `dest_type`: 0=STDOUT, 1=STDERR, 2=FILE. `dest_key`: context key with file path (if `dest_type=FILE`). `write_mode`: 0=OVERWRITE, 1=APPEND, 2=STREAM_CHUNK. |
+| ...  | *Reserved*         |                                                                | Reserved for `IO_READ`, `IO_OPEN`, `IO_CLOSE` in future versions.                                                                         |
+| 0xFE | `EXEC_RETURN`      | `count (1)`, `key_1..N`                                        | **Sink: Return Value.** Terminates execution and returns the values ​​from the specified context keys to the caller. (Renamed from `SINK_RETURN` for clarity.) |
+| 0xFF | `EXEC_HALT`        | -                                                              | **Termination** Unconditionally and immediately stops execution without returning a value. (Moved from `0xAF` for logical grouping.)      |
+
 
 ---
 
